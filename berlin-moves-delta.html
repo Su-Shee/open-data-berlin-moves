@@ -1,0 +1,174 @@
+<!doctype html>
+<head>
+<meta charset="utf-8">
+<title>D3 deltachart</title>
+<link rel="stylesheet" type="text/css" href="base.css">
+<script src="http://d3js.org/d3.v3.min.js"></script>
+
+<style type="text/css">
+
+.axis path, .axis line {
+  fill: none;
+  stroke: black;
+  shape-rendering: crispEdges;
+}
+
+.axis text {
+  font-size: 0.650em;
+}
+
+.year {
+  font-size: 0.850em;
+  font-weight: 600;
+  fill: #ffffff;
+}
+
+.bgbar.even {
+  fill: #7f7f5f;
+}
+
+.bgbar.odd {
+  fill: #a8a376;
+}
+
+.bar.positive {
+  fill: #006b55;
+}
+
+.bar.negative {
+  fill: #ab003c;
+}
+
+</style>
+</head>
+
+<body>
+
+<h2>People moving from and to Berlin</h2>
+<p>data source: 
+<a href="http://daten.berlin.de/datensaetze/zu-und-fortz%C3%BCge-berlin">Senatsverwaltung für Wirtschaft, Technologie und Frauen, Senat of Berlin</a>
+</p>
+<p>
+<a href="https://github.com/Su-Shee/opendata-wrestling">code is available on Su-Shee's github</a>
+</p>
+
+<div id="svgcontainer">
+<script type="text/javascript">
+"use strict";
+
+// source of our data: http://daten.berlin.de
+// "Senatsverwaltung für Wirtschaft, Technologie und Frauen" 
+// http://daten.berlin.de/datensaetze/zu-und-fortz%C3%BCge-berlin
+
+// GET json file with data
+var req = new XMLHttpRequest();
+req.open('GET', 'berlin-moves-data.json', false);
+req.send(null);
+
+var berlinmoves = JSON.parse(req.responseText);
+
+var dataset = [];
+var years   = [];
+
+for (var year in berlinmoves ) {
+  var moved = berlinmoves[year];
+  var diff  = moved[0] - moved[1];
+  years.push(year);
+  dataset.push(diff.toFixed(1));
+}
+
+var width  = 800;
+var height = 600;
+
+var xpad = 20;
+var ypad = 20;
+var tpad = 20;
+var bpad = 20;
+
+var xlabel = "numbers in thousands";
+var ylabel = "why did you leave?!";
+
+var xScale = d3.scale.linear()
+    .domain( [-45.0, 45.0] )
+    .range( [xpad, width] );
+
+var yScale = d3.scale.linear()
+    .domain([1996, 2011])
+    .range( [-10, height - ypad] );
+
+var xAxis = d3.svg.axis()
+    .scale(xScale)
+    .orient("bottom")
+    .ticks(5);
+
+var yAxis = d3.svg.axis()
+    .scale(yScale)
+    .orient("left")
+    .ticks(12)
+    .tickFormat(d3.format("d"));
+
+var chart  = d3.select("#svgcontainer").append("svg")
+  .attr("width", width + xpad + ypad)
+  .attr("height", height + tpad + bpad)
+  .append("g");
+
+chart.selectAll(".bgbar").data(dataset)
+    .enter().append("rect")
+    .attr("class", function(d, i) { return i % 2 ? "bgbar even" : "bgbar odd"; })
+    .attr("x", xpad * 2)
+    .attr("y", function (d, i) { return i * 35; })
+    .attr("width", width - xpad)
+    .attr("height", 35);
+
+chart.selectAll(".bar").data(dataset)
+    .enter().append("rect")
+    .attr("class", function(d) { return d < 0 ? "bar negative" : "bar positive"; })
+    .attr("x", function (d, i) { return xScale( Math.min(0, d) ) + xpad; })
+    .attr("y", function (d, i) { return i * 35; })
+    .attr("width", function (d, i) { return Math.abs(xScale(d) - xScale(0)); })
+    .attr("height", 35);
+
+chart.selectAll(".year").data(dataset)
+    .enter().append("text")
+    .attr("class", "year")
+    .attr("x", xpad * 3)
+    .attr("y", function (d, i) { return i == 0 ? 23 : (i * 35) + 23; })
+    .attr("height", 35)
+    .text(function (d, i) { return years[i]; });
+
+chart.selectAll(".amount").data(dataset)
+    .enter().append("text")
+    .attr("class", function(d) { return d < 0 ? "amount negative" : "amount positive"; })
+    .attr("x", function (d, i) { return d < 0 ? xScale(Math.min(0, d)) - xpad * 1.5 :  xScale(Math.max(0, d)) + xpad * 1.5; })
+    .attr("y", function (d, i) { return i == 0 ? 23 : (i * 35) + 23; })
+    .attr("height", 35)
+    .text(function (d, i) { return d; });
+
+
+chart.append("g")
+    .attr("class", "axis")
+    .attr("transform", "translate(" + xpad + "," + height + ")")
+    .call(xAxis);
+
+chart.append("text")
+    .attr("class", "axis")
+    .attr("x", width/2)
+    .attr("y", height + ypad * 2)
+    .attr("text-anchor", "middle")
+    .attr("fill", "#7f7f5f")
+    .text(xlabel);
+
+chart.append("text")
+    .attr("class", "axis")
+    .attr("x", -120)
+    .attr("y", ypad)
+    .attr("text-anchor", "middle")
+    .attr("transform", "rotate(-90)")
+    .attr("fill", "#7f7f5f")
+    .text(ylabel);
+
+</script>
+</div>
+<p></p>
+</body>
+</html>
