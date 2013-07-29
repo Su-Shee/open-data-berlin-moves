@@ -6,11 +6,11 @@ berlin-moves-data.csv: berlin-moves.temp
 berlin-moves-data.json: berlin-moves.temp
 	@sed -e '1i{' \
 	     -e '$$a}' \
-			 -e 's/ /, /2' \
+	     -e 's/ /, /2' \
 	     -e 's/ / : [ /' \
 	     -e 's/$$/ ]/' \
-			 -e '$$!s/]$$/],/' \
-			 -e 's/\([0-9]\{4\}\)/\"\1\"/' $< > $@
+	     -e '$$!s/]$$/],/' \
+	     -e 's/\([0-9]\{4\}\)/\"\1\"/' $< > $@
 
 berlin-moves-data.dat: berlin-moves.temp
 	@awk '{print $$0 " " $$2-$$3}' < $< > $@
@@ -32,7 +32,7 @@ berlin-moves-dirty.csv: berlin-moves-data.xls
 
 berlin-moves-data.xls:
 	@wget http://www.berlin.de/imperia/md/content/sen-wirtschaft/konjunkturdaten/metadaten/e2_wander.xls \
-		    -O berlin-moves-data.xls 2>/dev/null || true
+	   -O berlin-moves-data.xls 2>/dev/null || true
 
 clean:
 	rm -f berlin-moves-data.xls
