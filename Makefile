@@ -1,41 +1,42 @@
-berlin-moves-data.json berlin-moves-data.dat: berlin-moves-data.csv
-	@sed -e '1i{' \
-	     -e '1d' \
-	     -e 's/;/ : [ /' \
-	     -e 's/"//3g' \
-	     -e 's/;/, /' \
-	     -e 's/$$/ ]/' \
-	     -e '$$!s/]/],/' \
-	     -e '$$a}' $< > berlin-moves-data.json
-	@awk -F'";"' '{print $$1 "  " $$2 "  " $$3 "  " $$2-$$3}' $< | \
-	 sed -e 's/"//g' \
-	     -e '1d' > berlin-moves-data.dat
+berlin-moves-data.csv: berlin-moves.temp
+	@tr ' ' ';' < $< | \
+	 sed -e '1i"year";"to";"from"' > $@
+	@rm -f $<
 
-berlin-moves-data.csv: to-berlin.csv from-berlin.csv
-	@pr -m -t -s\; to-berlin.csv from-berlin.csv | \
-	 awk -F';' '{ print $$1";"$$2";"$$4 }' > $@
-	@sed -i '1i"year";"to";"from"' $@
+berlin-moves-data.json: berlin-moves.temp
+	@sed -e '1i{' \
+	     -e '$$a}' \
+			 -e 's/ /, /2' \
+	     -e 's/ / : [ /' \
+	     -e 's/$$/ ]/' \
+			 -e '$$!s/]$$/],/' \
+			 -e 's/\([0-9]\{4\}\)/\"\1\"/' $< > $@
+
+berlin-moves-data.dat: berlin-moves.temp
+	@awk '{print $$0 " " $$2-$$3}' < $< > $@
+
+berlin-moves.temp: to-berlin.csv from-berlin.csv
+	@join to-berlin.csv from-berlin.csv > $@
 	@rm to-berlin.csv from-berlin.csv berlin-moves-dirty.csv
 
 to-berlin.csv: berlin-moves-dirty.csv
 	@sed -n 11,27p $< | \
-	 sed -e 's/,//g' \
-	     -e 's/^\([0-9]\{4\}\)\(.*\)/"\1";"\2"/' > $@
+	 cut -d ',' -f4,7 --output-delimiter=' ' > $@
 
 from-berlin.csv: berlin-moves-dirty.csv
 	@sed -n 37,53p $< | \
-	 sed -e 's/,//g' \
-	     -e 's/^\([0-9]\{4\}\)\(.*\)/"\1";"\2"/' > $@
+	 cut -d ',' -f4,7 --output-delimiter=' ' > $@
 
 berlin-moves-dirty.csv: berlin-moves-data.xls
-	@xls2csv -f -x $< -c $@ &>/dev/null || true
-	@rm -f $<
+	@xls2csv -f -x $< -c $@
 
 berlin-moves-data.xls:
 	@wget http://www.berlin.de/imperia/md/content/sen-wirtschaft/konjunkturdaten/metadaten/e2_wander.xls \
 		    -O berlin-moves-data.xls 2>/dev/null || true
 
 clean:
-	rm -f berlin-moves-data*
+	rm -f berlin-moves-data.xls
+	rm -f berlin-moves-data.csv
 	rm -f to-berlin.csv
 	rm -f from-berlin.csv
+	rm -f *.temp
